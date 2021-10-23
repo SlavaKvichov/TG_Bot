@@ -2,9 +2,10 @@ from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
-from Buttons import markup_button
+from Buttons import markup_button, inline_buttons
 from config import *
 
 storage = MemoryStorage()
@@ -30,11 +31,30 @@ async def command_start(message: types.Message):
 async def echo(message: types.Message):
     if message.text == 'Каталог':
         await message.answer('Я над этим работаю')
-    if message.text == 'Добавить событие':
+    elif message.text == 'Добавить событие':
         await FSMEvent.name.set()
-        await message.reply('Имя события')
-    # await message.reply(message.text)
-    # await bot.send_message(message.from_user.id, message.text)
+        await message.reply('Имя события', reply_markup=inline_buttons.cansel_add_event)
+    else:
+        await bot.send_message(message.from_user.id, message.text)
+
+
+@dp.callback_query_handler(text='stop', state='*')
+async def cancel_add_event(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    await state.finish()
+    await message.answer('Отменено')
+
+
+@dp.callback_query_handler(text='time_empty', state='*')
+async def load_empty_date_finish(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['data_finish'] = ''
+    async with state.proxy() as data:
+        await bot.send_message(message.from_user.id, str(data))
+    await state.finish()
+    await message.answer('Отменено')
 
 
 @dp.message_handler(state=FSMEvent.name)
@@ -66,7 +86,7 @@ async def load_decription(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['description'] = message.text
     await FSMEvent.next()
-    await message.reply('Дата окончания')
+    await message.reply('Дата окончания', reply_markup=inline_buttons.time_empty)
 
 
 @dp.message_handler(state=FSMEvent.data_finish)
@@ -76,5 +96,6 @@ async def load_date_finish(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         await message.reply(str(data))
     await state.finish()
+
 
 executor.start_polling(dp, skip_updates=True)
