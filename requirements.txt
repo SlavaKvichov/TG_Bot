@@ -1,0 +1,2 @@
+aiogram==2.15
+SQLAlchemy==1.4.26
