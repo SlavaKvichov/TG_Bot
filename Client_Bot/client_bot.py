@@ -2,7 +2,6 @@ from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from Buttons import markup_button, inline_buttons
@@ -22,9 +21,14 @@ class FSMEvent(StatesGroup):
     data_finish = State()
 
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message_handler(commands=['start'])
 async def command_start(message: types.Message):
-    await bot.send_message(message.from_user.id, 'Добро пожаловать,', reply_markup=markup_button.keyboard)
+    # KIRILL_NICK_NAME = 360216881
+    # MY_NICK_NAME = 474639971
+    user_tg_id = message.from_user.id
+    first_name = message.from_user.first_name
+    last_name = message.from_user.last_name
+    await bot.send_message(message.from_user.id, 'Добро пожаловать, '+first_name, reply_markup=markup_button.keyboard)
 
 
 @dp.message_handler()
@@ -60,6 +64,7 @@ async def load_empty_date_finish(message: types.Message, state: FSMContext):
 @dp.message_handler(state=FSMEvent.name)
 async def load_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
+        data['event_user_owner_id'] = message.from_user.id
         data['name'] = message.text
     await FSMEvent.next()
     await message.reply('Заголовок')
