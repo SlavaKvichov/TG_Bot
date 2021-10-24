@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Table, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -7,10 +7,10 @@ engine = create_engine('sqlite:///data.db')
 Base = declarative_base()
 
 
-class Users(Base):
+class User(Base):
     __tablename__ = 'Users'
 
-    id = Column(Integer, primary_key=True),
+    user_id = Column(Integer, primary_key=True)
     user_tg_id = Column(Integer, ForeignKey('Event.event_user_owner_id'))
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
@@ -18,9 +18,9 @@ class Users(Base):
 
 
 class Event(Base):
-    __tablename__ = 'Users'
+    __tablename__ = 'Events'
 
-    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     title = Column(String, nullable=False)
     photo = Column(String, nullable=False)
