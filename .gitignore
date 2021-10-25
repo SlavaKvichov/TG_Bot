@@ -1,4 +1,4 @@
 __pycache__/
 venv
 .idea
-data.db
+Client_Bot/data.db

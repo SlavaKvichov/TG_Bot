@@ -5,6 +5,8 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from Buttons import markup_button, inline_buttons
+from SQL import sql_handler
+from Service_Bot import config
 from config import *
 
 storage = MemoryStorage()
@@ -12,6 +14,8 @@ storage = MemoryStorage()
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
+EVENT_TEXT = 'Вы создали событие👆👆👆\nДля того, чтобы получать уведомления о сообщениях перейдите в '\
+             + config.data['nickname'] + ' и напишите /start'
 
 class FSMEvent(StatesGroup):
     name = State()
@@ -23,12 +27,20 @@ class FSMEvent(StatesGroup):
 
 @dp.message_handler(commands=['start'])
 async def command_start(message: types.Message):
-    # KIRILL_NICK_NAME = 360216881
-    # MY_NICK_NAME = 474639971
-    user_tg_id = message.from_user.id
     first_name = message.from_user.first_name
-    last_name = message.from_user.last_name
-    await bot.send_message(message.from_user.id, 'Добро пожаловать, '+first_name, reply_markup=markup_button.keyboard)
+    try:
+        last_name = message.from_user.last_name
+        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name + '' + last_name,
+                               reply_markup=markup_button.keyboard)
+    except:
+        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name,
+                               reply_markup=markup_button.keyboard)
+    user_info = {
+        'user_tg_id': message.from_user.id,
+        'first_name': first_name,
+        'last_name': last_name
+    }
+    sql_handler.add_user_info(user_info)
 
 
 @dp.message_handler()
@@ -55,10 +67,12 @@ async def cancel_add_event(message: types.Message, state: FSMContext):
 async def load_empty_date_finish(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['data_finish'] = ''
-    async with state.proxy() as data:
-        await bot.send_message(message.from_user.id, str(data))
+        sql_handler.add_event(data)
+        CAPTION = data['title'] + '\n' + data['description']
+        await bot.send_photo(message.from_user.id, data['photo'],
+                             caption=CAPTION)
+        await bot.send_message(message.from_user.id, EVENT_TEXT)
     await state.finish()
-    await message.answer('Отменено')
 
 
 @dp.message_handler(state=FSMEvent.name)
@@ -98,8 +112,11 @@ async def load_decription(message: types.Message, state: FSMContext):
 async def load_date_finish(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['data_finish'] = message.text
-    async with state.proxy() as data:
-        await message.reply(str(data))
+        sql_handler.add_event(data)
+        CAPTION = data['title'] + '\n' + data['description'] + '\n' + 'Дата окончания: ' + data['data_finish']
+        await bot.send_photo(message.from_user.id, data['photo'],
+                             caption=CAPTION)
+        await bot.send_message(message.from_user.id, EVENT_TEXT)
     await state.finish()
 
 
