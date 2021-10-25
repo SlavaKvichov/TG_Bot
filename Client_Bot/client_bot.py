@@ -17,6 +17,7 @@ dp = Dispatcher(bot, storage=storage)
 EVENT_TEXT = 'Вы создали событие👆👆👆\nДля того, чтобы получать уведомления о сообщениях перейдите в '\
              + config.data['nickname'] + ' и напишите /start'
 
+
 class FSMEvent(StatesGroup):
     name = State()
     title = State()
@@ -46,7 +47,10 @@ async def command_start(message: types.Message):
 @dp.message_handler()
 async def echo(message: types.Message):
     if message.text == 'Каталог':
-        await message.answer('Я над этим работаю')
+        events = sql_handler.catalog()
+        for i in events:
+            caption = events[i]['title'] + '\n' + events[i]['description']
+            await bot.send_photo(message.from_user.id, events[i]['photo'], caption=caption)
     elif message.text == 'Добавить событие':
         await FSMEvent.name.set()
         await message.reply('Имя события', reply_markup=inline_buttons.cansel_add_event)
@@ -68,7 +72,7 @@ async def load_empty_date_finish(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['data_finish'] = ''
         sql_handler.add_event(data)
-        CAPTION = data['title'] + '\n' + data['description']
+        CAPTION = data['title'] + '\n\n' + data['description']
         await bot.send_photo(message.from_user.id, data['photo'],
                              caption=CAPTION)
         await bot.send_message(message.from_user.id, EVENT_TEXT)
@@ -113,7 +117,7 @@ async def load_date_finish(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['data_finish'] = message.text
         sql_handler.add_event(data)
-        CAPTION = data['title'] + '\n' + data['description'] + '\n' + 'Дата окончания: ' + data['data_finish']
+        CAPTION = data['title'] + '\n\n' + data['description'] + '\n\n' + 'Дата окончания: ' + data['data_finish']
         await bot.send_photo(message.from_user.id, data['photo'],
                              caption=CAPTION)
         await bot.send_message(message.from_user.id, EVENT_TEXT)

@@ -57,3 +57,12 @@ def add_event(event_info):
                         data_finish=event_info['data_finish'])
     s.add(event_info)
     s.commit()
+
+
+def catalog():
+    events = {}
+    for row in s.query(Events):
+        events[row.name] = {'title': row.title,
+                            'photo': row.photo,
+                            'description': row.description}
+    return events
