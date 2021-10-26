@@ -63,11 +63,11 @@ def add_event(event_info):
 def catalog():
     events = {}
     for row in s.query(Events):
-        events[row.name] = {'event_id': row.event_id,
-                            'title': row.title,
-                            'photo': row.photo,
-                            'description': row.description,
-                            'event_user_owner_id': row.event_user_owner_id}
+        events[row.event_id] = {'event_id': row.event_id,
+                                'title': row.title,
+                                'photo': row.photo,
+                                'description': row.description,
+                                'event_user_owner_id': row.event_user_owner_id}
     return events
 
 
@@ -75,3 +75,8 @@ def delete_event(event_id):
     event = s.query(Events).filter(Events.event_id == event_id)
     event.delete()
     s.commit()
+
+
+def event_count():
+    event = s.query(Events.event_id)
+    return event
