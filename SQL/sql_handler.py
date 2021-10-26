@@ -37,9 +37,10 @@ Base.metadata.create_all(engine)
 
 def add_user_info(user_info):
     try:
-        user_info_request = s.query(Users.first_name).filter(Users.user_tg_id == user_info['user_tg_id'])
+        user_info_request = s.query(Users).filter(Users.user_tg_id == user_info['user_tg_id'])
         print(user_info_request[0])
-        print(user_info_request)
+        user_info_request.update({'first_name': user_info['first_name'], 'last_name': user_info['last_name']})
+        s.commit()
     except:
         user_info = Users(user_tg_id=user_info['user_tg_id'],
                           first_name=user_info['first_name'],
@@ -62,7 +63,15 @@ def add_event(event_info):
 def catalog():
     events = {}
     for row in s.query(Events):
-        events[row.name] = {'title': row.title,
+        events[row.name] = {'event_id': row.event_id,
+                            'title': row.title,
                             'photo': row.photo,
-                            'description': row.description}
+                            'description': row.description,
+                            'event_user_owner_id': row.event_user_owner_id}
     return events
+
+
+def delete_event(event_id):
+    event = s.query(Events).filter(Events.event_id == event_id)
+    event.delete()
+    s.commit()

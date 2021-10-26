@@ -1,7 +1,9 @@
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher, FSMContext
+from aiogram.types import CallbackQuery
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from Buttons import markup_button, inline_buttons
@@ -29,9 +31,10 @@ class FSMEvent(StatesGroup):
 @dp.message_handler(commands=['start'])
 async def command_start(message: types.Message):
     first_name = message.from_user.first_name
+    last_name = ''
     try:
         last_name = message.from_user.last_name
-        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name + '' + last_name,
+        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name + ' ' + last_name,
                                reply_markup=markup_button.keyboard)
     except:
         await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name,
@@ -49,8 +52,9 @@ async def echo(message: types.Message):
     if message.text == 'Каталог':
         events = sql_handler.catalog()
         for i in events:
+            button = inline_buttons.delete_event_inline(events[i]['event_id']) if events[i]['event_user_owner_id'] == message.from_user.id else ''
             caption = events[i]['title'] + '\n' + events[i]['description']
-            await bot.send_photo(message.from_user.id, events[i]['photo'], caption=caption)
+            await bot.send_photo(message.from_user.id, events[i]['photo'], caption=caption, reply_markup=button)
     elif message.text == 'Добавить событие':
         await FSMEvent.name.set()
         await message.reply('Имя события', reply_markup=inline_buttons.cansel_add_event)
@@ -77,6 +81,13 @@ async def load_empty_date_finish(message: types.Message, state: FSMContext):
                              caption=CAPTION)
         await bot.send_message(message.from_user.id, EVENT_TEXT)
     await state.finish()
+
+
+@dp.callback_query_handler(Text(startswith='delete_event_id'))
+async def delete_event(callback: types.CallbackQuery):
+    event_id = int(callback['data'].split(':')[1])
+    sql_handler.delete_event(event_id)
+    await callback.answer('Удалено')
 
 
 @dp.message_handler(state=FSMEvent.name)
