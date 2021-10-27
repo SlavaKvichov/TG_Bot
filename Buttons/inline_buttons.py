@@ -11,6 +11,17 @@ def answer_inline():
     return button
 
 
+def show_more_events(button, increase, count):
+    button1 = InlineKeyboardButton(text='+1', callback_data='show_more_events:1:'+str(count))
+    if increase == 1:
+        button.row(button1)
+    else:
+        button2 = InlineKeyboardButton(text='+'+str(increase),
+                                       callback_data='show_more_events:+'+str(increase)+':'+str(count))
+        button.row(button1, button2)
+    return button
+
+
 cansel_add_event = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text='❌ Отменить операцию',
                                                                               callback_data='stop'))
 time_empty = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text='Оставить пустым',

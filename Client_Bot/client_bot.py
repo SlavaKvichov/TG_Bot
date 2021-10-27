@@ -19,7 +19,6 @@ dp = Dispatcher(bot, storage=storage)
 EVENT_TEXT = 'Вы создали событие👆👆👆\nДля того, чтобы получать уведомления о сообщениях перейдите в '\
              + config.data['nickname'] + ' и напишите /start'
 
-
 class FSMEvent(StatesGroup):
     name = State()
     title = State()
@@ -33,15 +32,30 @@ class FSMDelete_event(StatesGroup):
     decision = State()
 
 
-async def show_catalog(message: types.Message, count=None):
-    # event_counts = sql_handler.event_count()[0][0] #Количество событий
+async def show_catalog(message: types.Message, count, max_count, user_id):
     events = sql_handler.catalog()
-    for i in events:
+    keys = []
+    for i in events.keys():
+        keys.append(i)
+    keys_count = len(keys) - 1
+    while count <= max_count <= keys_count:
         button = inline_buttons.answer_inline()
-        button = inline_buttons.delete_event_inline(events[i]['event_id'], button) \
-            if events[i]['event_user_owner_id'] == message.from_user.id else button
-        caption = events[i]['title'] + '\n' + events[i]['description']
-        await bot.send_photo(message.from_user.id, events[i]['photo'], caption=caption, reply_markup=button)
+        button = inline_buttons.delete_event_inline(events[keys[count]]['event_id'], button) \
+                    if events[keys[count]]['event_user_owner_id'] == user_id else button
+        caption = events[keys[count]]['title'] + '\n' + events[keys[count]]['description']
+        if count == max_count:
+            if keys_count - count >= 5:
+                print('>=5')
+                button = inline_buttons.show_more_events(button, increase=5, count=count)
+            elif 1 < keys_count - count < 5:
+                increase = keys_count - count
+                button = inline_buttons.show_more_events(button, increase=increase, count=count)
+                print('<5')
+            elif keys_count - count == 1:
+                print('=1')
+                button = inline_buttons.show_more_events(button, increase=1, count=count)
+        await bot.send_photo(message.from_user.id, events[keys[count]]['photo'], caption=caption, reply_markup=button)
+        count += 1
 
 
 @dp.message_handler(commands=['start'])
@@ -66,7 +80,7 @@ async def command_start(message: types.Message):
 @dp.message_handler()
 async def echo(message: types.Message):
     if message.text == 'Каталог':
-        await show_catalog(message)
+        await show_catalog(message, count=0, max_count=1, user_id=message.from_user.id)
     elif message.text == 'Добавить событие':
         await FSMEvent.name.set()
         await message.reply('Имя события', reply_markup=inline_buttons.cansel_add_event)
@@ -93,6 +107,18 @@ async def load_empty_date_finish(message: types.Message, state: FSMContext):
                              caption=CAPTION)
         await bot.send_message(message.from_user.id, EVENT_TEXT)
     await state.finish()
+
+
+@dp.callback_query_handler(Text(startswith='show_more_events'))
+async def show_more_events(callback: types.CallbackQuery):
+    print('da')
+    increase = int(callback['data'].split(':')[1])
+    print('Увеличить на:', increase)
+    count = int(callback['data'].split(':')[2]) + 1
+    print('Текущий индекс:', count)
+    max_count = count + increase - 1
+    print('Показать до индекса:', max_count)
+    await show_catalog(message=callback, count=count, max_count=max_count, user_id=callback.from_user.id)
 
 
 @dp.callback_query_handler(Text(startswith='delete_event_id'))
