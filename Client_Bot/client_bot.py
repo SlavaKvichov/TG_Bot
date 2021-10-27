@@ -1,6 +1,5 @@
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher, FSMContext
-# from aiogram.types import CallbackQuery
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Text
@@ -18,6 +17,7 @@ dp = Dispatcher(bot, storage=storage)
 
 EVENT_TEXT = 'Вы создали событие👆👆👆\nДля того, чтобы получать уведомления о сообщениях перейдите в '\
              + config.data['nickname'] + ' и напишите /start'
+ANSWER_TEXT = 'вы вошли в чат с владельцем события'
 
 class FSMEvent(StatesGroup):
     name = State()
@@ -32,6 +32,19 @@ class FSMDelete_event(StatesGroup):
     decision = State()
 
 
+class FSMAnswer(StatesGroup):
+    event_owner_user_info = State()
+    user_info = State()
+    event_info = State()
+    ask = State()
+    answer = State()
+
+
+async def show_event(event_info, user_info, state: FSMContext):
+    caption = event_info['title'] + '\n' + event_info['description']
+    await bot.send_photo(user_info['user_tg_id'], event_info['photo'], caption=caption)
+
+
 async def show_catalog(message: types.Message, count, max_count, user_id):
     events = sql_handler.catalog()
     keys = []
@@ -39,20 +52,17 @@ async def show_catalog(message: types.Message, count, max_count, user_id):
         keys.append(i)
     keys_count = len(keys) - 1
     while count <= max_count <= keys_count:
-        button = inline_buttons.answer_inline()
-        button = inline_buttons.delete_event_inline(events[keys[count]]['event_id'], button) \
+        button = inline_buttons.ask_inline(event_id=events[keys[count]]['event_id'], user_tg_id=message.from_user.id)
+        button = inline_buttons.delete_event_inline(event_id=events[keys[count]]['event_id'], button=button) \
                     if events[keys[count]]['event_user_owner_id'] == user_id else button
         caption = events[keys[count]]['title'] + '\n' + events[keys[count]]['description']
         if count == max_count:
             if keys_count - count >= 5:
-                print('>=5')
                 button = inline_buttons.show_more_events(button, increase=5, count=count)
             elif 1 < keys_count - count < 5:
                 increase = keys_count - count
                 button = inline_buttons.show_more_events(button, increase=increase, count=count)
-                print('<5')
             elif keys_count - count == 1:
-                print('=1')
                 button = inline_buttons.show_more_events(button, increase=1, count=count)
         await bot.send_photo(message.from_user.id, events[keys[count]]['photo'], caption=caption, reply_markup=button)
         count += 1
@@ -64,10 +74,10 @@ async def command_start(message: types.Message):
     last_name = ''
     try:
         last_name = message.from_user.last_name
-        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name + ' ' + last_name,
+        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name + ' ' + last_name + '!',
                                reply_markup=markup_button.keyboard)
     except:
-        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name,
+        await bot.send_message(message.from_user.id, 'Добро пожаловать, ' + first_name + '!',
                                reply_markup=markup_button.keyboard)
     user_info = {
         'user_tg_id': message.from_user.id,
@@ -78,14 +88,12 @@ async def command_start(message: types.Message):
 
 
 @dp.message_handler()
-async def echo(message: types.Message):
+async def echo(message: types.Message, state: FSMContext):
     if message.text == 'Каталог':
         await show_catalog(message, count=0, max_count=1, user_id=message.from_user.id)
     elif message.text == 'Добавить событие':
         await FSMEvent.name.set()
         await message.reply('Имя события', reply_markup=inline_buttons.cansel_add_event)
-    else:
-        await bot.send_message(message.from_user.id, message.text)
 
 
 @dp.callback_query_handler(text='stop', state='*')
@@ -109,15 +117,27 @@ async def load_empty_date_finish(message: types.Message, state: FSMContext):
     await state.finish()
 
 
+@dp.callback_query_handler(Text(startswith='answer_user'))
+async def answer(callback: types.CallbackQuery, state: FSMContext):
+    event_id = int(callback['data'].split(':')[1])
+    event_info = sql_handler.get_event_info(event_id=event_id)
+    event_user_owner_info = sql_handler.get_user_info(user_tg_id=event_info['event_info']['event_user_owner_id'])
+    user_tg_id = int(callback['data'].split(':')[2])
+    user_info = sql_handler.get_user_info(user_tg_id=user_tg_id)
+    await FSMAnswer.ask.set()
+    async with state.proxy() as data:
+        data['event_user_owner_info'] = event_user_owner_info['user_info']
+        data['user_info'] = user_info['user_info']
+        data['event_info'] = event_info['event_info']
+        await bot.send_message(callback.from_user.id, 'Вы вошли в чат с владельцем события '
+                               + data['event_info']['name'], reply_markup=markup_button.answer_keyboard)
+
+
 @dp.callback_query_handler(Text(startswith='show_more_events'))
 async def show_more_events(callback: types.CallbackQuery):
-    print('da')
     increase = int(callback['data'].split(':')[1])
-    print('Увеличить на:', increase)
     count = int(callback['data'].split(':')[2]) + 1
-    print('Текущий индекс:', count)
     max_count = count + increase - 1
-    print('Показать до индекса:', max_count)
     await show_catalog(message=callback, count=count, max_count=max_count, user_id=callback.from_user.id)
 
 
@@ -186,6 +206,36 @@ async def load_date_finish(message: types.Message, state: FSMContext):
                              caption=CAPTION)
         await bot.send_message(message.from_user.id, EVENT_TEXT)
     await state.finish()
+
+
+@dp.message_handler(state=FSMAnswer)
+async def input_and_send_message_to_service(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        if message.text == 'Посмотреть событие':
+            await show_event(event_info=data['event_info'], user_info=data['user_info'], state=FSMAnswer)
+            await FSMAnswer.ask.set()
+        elif message.text == 'Выйти из чата':
+            await bot.send_message(data['user_info']['user_tg_id'], 'Вы вышли из чата',
+                                   reply_markup=markup_button.keyboard)
+            current_state = await state.get_state()
+            if current_state is None:
+                return
+            await state.finish()
+        else:
+            with bot.with_token(config.TOKEN):
+                try:
+                    if not data['event_user_owner_info']['last_name']:
+                        data['event_user_owner_info']['last_name'] = ''
+                    await bot.send_message(data['event_user_owner_info']['user_tg_id'], '#Сообщение' + ' ' +
+                                           data['event_info']['title'] + '\n' +
+                                           data['event_user_owner_info']['first_name'] + ' ' +
+                                           data['event_user_owner_info']['last_name'] + message.text,
+                                           reply_markup=inline_buttons.answer_inline(
+                                               user_tg_id=data['event_user_owner_info']['user_tg_id'],
+                                               first_name=data['event_user_owner_info']['first_name'],
+                                               last_name=data['event_user_owner_info']['last_name']))
+                except:
+                    pass
 
 
 executor.start_polling(dp, skip_updates=True)

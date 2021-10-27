@@ -1,6 +1,5 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
-from sqlalchemy.sql import select, and_
 from sqlalchemy.ext.declarative import declarative_base
 
 engine = create_engine('sqlite:///data.db', echo=True)
@@ -77,6 +76,23 @@ def delete_event(event_id):
     s.commit()
 
 
-def event_count():
-    event = s.query(Events.event_id)
-    return event
+def get_event_info(event_id):
+    event_info = {}
+    for event in s.query(Events).filter(Events.event_id == event_id):
+        event_info['event_info'] = {'event_id': event.event_id,
+                                    'event_user_owner_id': event.event_user_owner_id,
+                                    'name': event.name,
+                                    'photo': event.photo,
+                                    'title': event.title,
+                                    'description': event.description}
+    return event_info
+
+
+def get_user_info(user_tg_id):
+    user_info = {}
+    for user in s.query(Users).filter(Users.user_tg_id == user_tg_id):
+        user_info['user_info'] = {'user_id': user.user_id,
+                                  'user_tg_id': user.user_tg_id,
+                                  'first_name': user.first_name,
+                                  'last_name': user.last_name}
+    return user_info

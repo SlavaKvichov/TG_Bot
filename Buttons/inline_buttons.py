@@ -6,8 +6,17 @@ def delete_event_inline(event_id, button):
     return button
 
 
-def answer_inline():
-    button = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text='Ответить', callback_data='answer_user'))
+def ask_inline(event_id, user_tg_id):
+    button = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text='Ответить',
+                                                                        callback_data='answer_user:' + str(event_id) +
+                                                                        ':' + str(user_tg_id)))
+    return button
+
+
+def answer_inline(user_tg_id, first_name, last_name):
+    button = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text='Ответить',
+                                                                        callback_data='answer_user:' + user_tg_id + ':'
+                                                                                      + first_name + ':' + last_name))
     return button
 
 

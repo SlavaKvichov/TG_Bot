@@ -4,7 +4,8 @@ from aiogram.utils import executor
 
 from config import *
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher(bot)
+service_bot = Bot(token=TOKEN)
+service_dp = Dispatcher(service_bot)
 
-executor.start_polling(dp, skip_updates=True)
+executor.start_polling(service_dp, skip_updates=True)
+
