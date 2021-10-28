@@ -1,9 +1,9 @@
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher, FSMContext
-from aiogram.utils import executor
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.utils import executor
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from Buttons import markup_button, inline_buttons
 from SQL import sql_handler
@@ -15,9 +15,9 @@ storage = MemoryStorage()
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
-EVENT_TEXT = 'Вы создали событие👆👆👆\nДля того, чтобы получать уведомления о сообщениях перейдите в '\
+EVENT_TEXT = 'Вы создали событие👆👆👆\nДля того, чтобы получать уведомления о сообщениях перейдите в ' \
              + config.data['nickname'] + ' и напишите /start'
-ANSWER_TEXT = 'вы вошли в чат с владельцем события'
+
 
 class FSMEvent(StatesGroup):
     name = State()
@@ -54,7 +54,7 @@ async def show_catalog(message: types.Message, count, max_count, user_id):
     while count <= max_count <= keys_count:
         button = inline_buttons.ask_inline(event_id=events[keys[count]]['event_id'], user_tg_id=message.from_user.id)
         button = inline_buttons.delete_event_inline(event_id=events[keys[count]]['event_id'], button=button) \
-                    if events[keys[count]]['event_user_owner_id'] == user_id else button
+            if events[keys[count]]['event_user_owner_id'] == user_id else button
         caption = events[keys[count]]['title'] + '\n' + events[keys[count]]['description']
         if count == max_count:
             if keys_count - count >= 5:
@@ -117,7 +117,7 @@ async def load_empty_date_finish(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-@dp.callback_query_handler(Text(startswith='answer_user'))
+@dp.callback_query_handler(Text(startswith='ask_user'))
 async def answer(callback: types.CallbackQuery, state: FSMContext):
     event_id = int(callback['data'].split(':')[1])
     event_info = sql_handler.get_event_info(event_id=event_id)
@@ -130,7 +130,7 @@ async def answer(callback: types.CallbackQuery, state: FSMContext):
         data['user_info'] = user_info['user_info']
         data['event_info'] = event_info['event_info']
         await bot.send_message(callback.from_user.id, 'Вы вошли в чат с владельцем события '
-                               + data['event_info']['name'], reply_markup=markup_button.answer_keyboard)
+                               + data['event_info']['name'], reply_markup=markup_button.ask_keyboard)
 
 
 @dp.callback_query_handler(Text(startswith='show_more_events'))
@@ -223,19 +223,20 @@ async def input_and_send_message_to_service(message: types.Message, state: FSMCo
             await state.finish()
         else:
             with bot.with_token(config.TOKEN):
-                try:
-                    if not data['event_user_owner_info']['last_name']:
-                        data['event_user_owner_info']['last_name'] = ''
-                    await bot.send_message(data['event_user_owner_info']['user_tg_id'], '#Сообщение' + ' ' +
-                                           data['event_info']['title'] + '\n' +
-                                           data['event_user_owner_info']['first_name'] + ' ' +
-                                           data['event_user_owner_info']['last_name'] + message.text,
-                                           reply_markup=inline_buttons.answer_inline(
-                                               user_tg_id=data['event_user_owner_info']['user_tg_id'],
-                                               first_name=data['event_user_owner_info']['first_name'],
-                                               last_name=data['event_user_owner_info']['last_name']))
-                except:
-                    pass
+                if data['user_info']['last_name'] is None:
+                    data['user_info']['last_name'] = ''
+                await bot.send_message(data['event_user_owner_info']['user_tg_id'], '#Сообщение' + ' ' +
+                                       data['event_info']['title'] + '\n' +
+                                       data['user_info']['first_name'] + ' ' +
+                                       data['user_info']['last_name'] + ': ' + message.text,
+                                       reply_markup=inline_buttons.answer_inline(
+                                           event_user_owner_id=data['event_user_owner_info']['user_tg_id'],
+                                           event_id=data['event_info']['event_id'],
+                                           event_name=data['event_info']['name'],
+                                           user_tg_id=data['user_info']['user_tg_id'],
+                                           user_first_name=data['user_info']['first_name'],
+                                           user_last_name=data['user_info']['last_name']
+                                       ))
 
 
 executor.start_polling(dp, skip_updates=True)

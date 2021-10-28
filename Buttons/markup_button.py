@@ -5,7 +5,9 @@ keyboard2 = KeyboardButton('Добавить событие')
 keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard.row(keyboard1, keyboard2)
 
-answer_keyboard1 = KeyboardButton('Выйти из чата')
-answer_keyboard2 = KeyboardButton('Посмотреть событие')
-answer_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-answer_keyboard.row(answer_keyboard1, answer_keyboard2)
+ask_keyboard1 = KeyboardButton('Выйти из чата')
+ask_keyboard2 = KeyboardButton('Посмотреть событие')
+ask_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+ask_keyboard.row(ask_keyboard1, ask_keyboard2)
+
+answer_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton('Выйти из чата'))
