@@ -13,18 +13,16 @@ def ask_inline(event_id, user_tg_id):
     return button
 
 
-def answer_inline(event_user_owner_id, event_id, event_name, user_tg_id, user_first_name, user_last_name):
-    button = InlineKeyboardMarkup(row_width=1) \
-        .row(InlineKeyboardButton(text='Ответить',
-                                  callback_data='answer_user:' + str(event_user_owner_id)
-                                                + ':' + str(event_id)
-                                                + ':' + str(event_name)
-                                                + ':' + str(user_tg_id)
-                                                + ':' + str(user_first_name)
-                                                + ':' + str(user_last_name)),
-             InlineKeyboardButton(text='Посмотреть событие', callback_data='show_event:'
-                                                                           + ':' + str(event_id)
-                                  ))
+def answer_inline(event_user_owner_id, event_id, user_tg_id):
+    button = InlineKeyboardMarkup(row_width=1).row(InlineKeyboardButton(text='Ответить',
+                                                                        callback_data='answer_user:'
+                                                                                      + str(event_user_owner_id)
+                                                                                      + ':' + str(event_id)
+                                                                                      + ':' + str(user_tg_id)),
+                                                   InlineKeyboardButton(text='Посмотреть событие',
+                                                                        callback_data='show_event:'
+                                                                                      + ':' + str(event_id)
+                                                                        ))
     return button
 
 

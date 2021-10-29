@@ -232,11 +232,7 @@ async def input_and_send_message_to_service(message: types.Message, state: FSMCo
                                        reply_markup=inline_buttons.answer_inline(
                                            event_user_owner_id=data['event_user_owner_info']['user_tg_id'],
                                            event_id=data['event_info']['event_id'],
-                                           event_name=data['event_info']['name'],
-                                           user_tg_id=data['user_info']['user_tg_id'],
-                                           user_first_name=data['user_info']['first_name'],
-                                           user_last_name=data['user_info']['last_name']
-                                       ))
+                                           user_tg_id=data['user_info']['user_tg_id']))
 
 
 executor.start_polling(dp, skip_updates=True)
