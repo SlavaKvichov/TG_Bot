@@ -3,8 +3,8 @@ from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.deep_linking import get_start_link
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from Buttons import markup_button, inline_buttons
 from SQL import sql_handler
@@ -25,14 +25,20 @@ class FSMAnswer(StatesGroup):
     answer = State()
 
 
-# async def show_event(event_info, user_info, state: FSMContext):
-#     caption = event_info['title'] + '\n' + event_info['description']
-#     await service_bot.send_photo(user_info['user_tg_id'], event_info['photo'], caption=caption)
+@service_dp.callback_query_handler(Text(startswith='show_event'))
+async def show_event(callback: types.CallbackQuery):
+    event_id = int(callback['data'].split(':')[1])
+    event_info = sql_handler.get_event_info(event_id=event_id)
+    event_info = event_info['event_info']
+    caption = event_info['title'] + '\n' + event_info['description']
+    with service_bot.with_token(config.TOKEN):
+        await service_bot.send_photo(event_info['event_user_owner_id'], event_info['photo'], caption=caption)
 
 
 @service_dp.callback_query_handler(Text(startswith='answer_user'))
 async def answer(callback: types.CallbackQuery, state: FSMContext):
     await FSMAnswer.answer.set()
+    print(callback['data'])
     event_user_owner_id = int(callback['data'].split(':')[1])
     event_user_owner_info = sql_handler.get_user_info(user_tg_id=event_user_owner_id)
     event_id = int(callback['data'].split(':')[2])
@@ -50,11 +56,6 @@ async def answer(callback: types.CallbackQuery, state: FSMContext):
                                        reply_markup=markup_button.answer_keyboard)
 
 
-# @service_dp.callback_query_handler()
-# async def show_event():
-#     link = await get_start_link('foo', encode=True)
-
-
 @service_dp.message_handler(state=FSMAnswer.answer)
 async def echo(message: types.Message, state: FSMContext):
     if message.text == 'Выйти из чата':
@@ -67,9 +68,12 @@ async def echo(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['ask'] = message.text
             with service_bot.with_token(config.TOKEN):
-                await service_bot.send_message(data['user_info']['user_tg_id'],
-                                               'Сообщение от владельца события ' + data['event_info']['name']
-                                               + '\n' + message.text)
+                await service_bot.send_message(data['user_info']['user_tg_id'],'Сообщение от владельца события '
+                                               + data['event_info']['name'] + '\n' + message.text,
+                                               reply_markup=inline_buttons.ask_inline(
+                                               event_id=data['event_info']['event_id'],
+                                               user_tg_id=data['event_info']['event_user_owner_id']
+                    ))
 
 
 executor.start_polling(service_dp, skip_updates=True)

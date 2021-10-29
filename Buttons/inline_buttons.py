@@ -20,9 +20,7 @@ def answer_inline(event_user_owner_id, event_id, user_tg_id):
                                                                                       + ':' + str(event_id)
                                                                                       + ':' + str(user_tg_id)),
                                                    InlineKeyboardButton(text='Посмотреть событие',
-                                                                        callback_data='show_event:'
-                                                                                      + ':' + str(event_id)
-                                                                        ))
+                                                                        callback_data='show_event:' + str(event_id)))
     return button
 
 
