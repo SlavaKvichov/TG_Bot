@@ -6,8 +6,9 @@ def delete_event_inline(event_id, button):
     return button
 
 
-def ask_inline(event_id, user_tg_id):
-    button = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text='Связаться',
+def ask_inline(event_id, user_tg_id, flag):
+    text = 'Ответить' if flag == 'Ответить' else 'Связаться'
+    button = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton(text=text,
                                                                         callback_data='ask_user:' + str(event_id) +
                                                                                       ':' + str(user_tg_id)))
     return button

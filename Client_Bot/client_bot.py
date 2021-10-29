@@ -52,7 +52,8 @@ async def show_catalog(message: types.Message, count, max_count, user_id):
         keys.append(i)
     keys_count = len(keys) - 1
     while count <= max_count <= keys_count:
-        button = inline_buttons.ask_inline(event_id=events[keys[count]]['event_id'], user_tg_id=message.from_user.id)
+        button = inline_buttons.ask_inline(event_id=events[keys[count]]['event_id'], user_tg_id=message.from_user.id,
+                                           flag=None)
         button = inline_buttons.delete_event_inline(event_id=events[keys[count]]['event_id'], button=button) \
             if events[keys[count]]['event_user_owner_id'] == user_id else button
         caption = events[keys[count]]['title'] + '\n' + events[keys[count]]['description']

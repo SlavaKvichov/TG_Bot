@@ -3,7 +3,6 @@ from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils import executor
-from aiogram.utils.deep_linking import get_start_link
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from Buttons import markup_button, inline_buttons
@@ -68,11 +67,12 @@ async def echo(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['ask'] = message.text
             with service_bot.with_token(config.TOKEN):
-                await service_bot.send_message(data['user_info']['user_tg_id'],'Сообщение от владельца события '
+                await service_bot.send_message(data['user_info']['user_tg_id'], 'Сообщение от владельца события '
                                                + data['event_info']['name'] + '\n' + message.text,
                                                reply_markup=inline_buttons.ask_inline(
                                                event_id=data['event_info']['event_id'],
-                                               user_tg_id=data['event_info']['event_user_owner_id']
+                                               user_tg_id=data['event_info']['event_user_owner_id'],
+                                               flag='Ответить'
                     ))
 
 
