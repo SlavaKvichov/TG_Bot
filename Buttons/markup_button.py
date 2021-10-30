@@ -1,4 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup,  KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup,  KeyboardButton, ReplyKeyboardRemove
 
 keyboard1 = KeyboardButton('Каталог')
 keyboard2 = KeyboardButton('Добавить событие')
@@ -10,4 +10,6 @@ ask_keyboard2 = KeyboardButton('Посмотреть событие')
 ask_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 ask_keyboard.row(ask_keyboard1, ask_keyboard2)
 
-answer_keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True).add(KeyboardButton('Выйти из чата'))
+answer_keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton('Выйти из чата'))
+
+hide_keyboard = ReplyKeyboardRemove()

@@ -24,6 +24,18 @@ class FSMAnswer(StatesGroup):
     answer = State()
 
 
+@service_dp.message_handler(commands=['start'], state='*')
+async def command_start(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    await state.finish()
+    user_info = sql_handler.get_user_info(user_tg_id=message.from_user.id)
+    user_info['last_name'] = '' if user_info['last_name'] is None else user_info['last_name']
+    await service_bot.send_message(message.from_user.id, 'Здравствуй, ' + user_info['first_name'] + ' ' +
+                                   user_info['last_name'], reply_markup=markup_button.hide_keyboard)
+
+
 @service_dp.callback_query_handler(Text(startswith='show_event'))
 async def show_event(callback: types.CallbackQuery):
     event_id = int(callback['data'].split(':')[1])
@@ -62,7 +74,8 @@ async def echo(message: types.Message, state: FSMContext):
         if current_state is None:
             return
         await state.finish()
-        await service_bot.send_message(message.from_user.id, 'Вы вышли из чата')
+        await service_bot.send_message(message.from_user.id, 'Вы вышли из чата',
+                                       reply_markup=markup_button.hide_keyboard)
     else:
         async with state.proxy() as data:
             data['ask'] = message.text
@@ -72,8 +85,7 @@ async def echo(message: types.Message, state: FSMContext):
                                                reply_markup=inline_buttons.ask_inline(
                                                event_id=data['event_info']['event_id'],
                                                user_tg_id=data['event_info']['event_user_owner_id'],
-                                               flag='Ответить'
-                    ))
+                                               flag='Ответить'))
 
 
 executor.start_polling(service_dp, skip_updates=True)
