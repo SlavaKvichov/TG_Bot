@@ -118,8 +118,12 @@ async def load_empty_date_finish(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-@dp.callback_query_handler(Text(startswith='ask_user'))
+@dp.callback_query_handler(Text(startswith='ask_user'), state='*')
 async def answer(callback: types.CallbackQuery, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state:
+        await state.finish()
+        await bot.send_message(callback.from_user.id, 'Вы вышли из текущего чата')
     event_id = int(callback['data'].split(':')[1])
     event_info = sql_handler.get_event_info(event_id=event_id)
     event_user_owner_info = sql_handler.get_user_info(user_tg_id=event_info['event_info']['event_user_owner_id'])

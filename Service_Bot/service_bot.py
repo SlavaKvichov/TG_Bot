@@ -36,8 +36,11 @@ async def command_start(message: types.Message, state: FSMContext):
                                    user_info['last_name'], reply_markup=markup_button.hide_keyboard)
 
 
-@service_dp.callback_query_handler(Text(startswith='show_event'))
-async def show_event(callback: types.CallbackQuery):
+@service_dp.callback_query_handler(Text(startswith='show_event'), state='*')
+async def show_event(callback: types.CallbackQuery, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state:
+        await state.finish()
     event_id = int(callback['data'].split(':')[1])
     event_info = sql_handler.get_event_info(event_id=event_id)
     event_info = event_info['event_info']
@@ -46,10 +49,13 @@ async def show_event(callback: types.CallbackQuery):
         await service_bot.send_photo(event_info['event_user_owner_id'], event_info['photo'], caption=caption)
 
 
-@service_dp.callback_query_handler(Text(startswith='answer_user'))
+@service_dp.callback_query_handler(Text(startswith='answer_user'), state='*')
 async def answer(callback: types.CallbackQuery, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state:
+        await state.finish()
+        await service_bot.send_message(callback.from_user.id, 'Вы вышли из текущего чата')
     await FSMAnswer.answer.set()
-    print(callback['data'])
     event_user_owner_id = int(callback['data'].split(':')[1])
     event_user_owner_info = sql_handler.get_user_info(user_tg_id=event_user_owner_id)
     event_id = int(callback['data'].split(':')[2])
