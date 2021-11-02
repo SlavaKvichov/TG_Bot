@@ -38,9 +38,6 @@ async def command_start(message: types.Message, state: FSMContext):
 
 @service_dp.callback_query_handler(Text(startswith='show_event'), state='*')
 async def show_event(callback: types.CallbackQuery, state: FSMContext):
-    current_state = await state.get_state()
-    if current_state:
-        await state.finish()
     event_id = int(callback['data'].split(':')[1])
     event_info = sql_handler.get_event_info(event_id=event_id)
     event_info = event_info['event_info']
