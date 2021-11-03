@@ -31,6 +31,7 @@ async def command_start(message: types.Message, state: FSMContext):
         return
     await state.finish()
     user_info = sql_handler.get_user_info(user_tg_id=message.from_user.id)
+    user_info = user_info['user_info']
     user_info['last_name'] = '' if user_info['last_name'] is None else user_info['last_name']
     await service_bot.send_message(message.from_user.id, 'Здравствуй, ' + user_info['first_name'] + ' ' +
                                    user_info['last_name'], reply_markup=markup_button.hide_keyboard)
